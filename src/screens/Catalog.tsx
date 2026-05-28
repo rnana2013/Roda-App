@@ -12,6 +12,9 @@ import {
 import { useStore } from '../store';
 import { CatalogItem } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../services/firebaseConfig';
+import { popularServicosPadrao } from '../services/popularServicos';
 
 const Catalog: React.FC = () => {
   const { catalog, addToCatalog, updateCatalog, deleteCatalog } = useStore();
@@ -21,6 +24,8 @@ const Catalog: React.FC = () => {
   const [filterType, setFilterType] = useState<'all' | 'part' | 'service'>('all');
 
   const [formType, setFormType] = useState<'part' | 'service'>('part');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const filteredItems = catalog.filter(i => {
     const matchesSearch = i.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -29,8 +34,10 @@ const Catalog: React.FC = () => {
     return matchesSearch && matchesType;
   });
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setErrorMsg(null);
     const formData = new FormData(e.currentTarget);
     
     const itemData: CatalogItem = {
@@ -40,7 +47,7 @@ const Catalog: React.FC = () => {
       category: formData.get('category') as string,
       description: formData.get('description') as string,
       suggestedPrice: Number(formData.get('suggestedPrice')),
-      minPrice: Number(formData.get('minPrice')),
+      minPrice: Number(formData.get('minPrice')) || 0,
       costPrice: formType === 'part' ? Number(formData.get('costPrice')) : undefined,
       execTime: formType === 'service' ? formData.get('execTime') as string : undefined,
       stock: formType === 'part' ? Number(formData.get('stock')) : undefined,
@@ -48,14 +55,20 @@ const Catalog: React.FC = () => {
       code: formData.get('code') as string,
     };
 
-    if (editingItem) {
-      updateCatalog(itemData);
-    } else {
-      addToCatalog(itemData);
+    try {
+      if (editingItem) {
+        await updateCatalog(itemData);
+      } else {
+        await addToCatalog(itemData);
+      }
+      setIsModalOpen(false);
+      setEditingItem(null);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err instanceof Error ? err.message : 'Erro ao salvar o item.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsModalOpen(false);
-    setEditingItem(null);
   };
 
   return (
@@ -65,16 +78,61 @@ const Catalog: React.FC = () => {
           <h1 className="text-4xl font-display font-black tracking-tighter uppercase italic text-white leading-none">Meu <span className="text-primary italic">Catálogo</span></h1>
           <p className="text-white/40 font-bold uppercase tracking-widest text-[10px] mt-2">Gestão rápida de peças e serviços técnicos</p>
         </div>
-        <button 
-          onClick={() => {
-            setEditingItem(null);
-            setFormType('part');
-            setIsModalOpen(true);
-          }}
-          className="btn-primary"
-        >
-          <Plus size={20} /> Adicionar Item
-        </button>
+        <div className="flex flex-wrap items-center gap-4">
+          <button 
+            type="button"
+            onClick={async () => {
+              try {
+                console.log("Tentando salvar peça");
+                const docRef = await addDoc(collection(db, "pecas"), {
+                  nome: "Teste Firebase",
+                  valorVenda: 10,
+                  estoque: 1,
+                  createdAt: serverTimestamp(),
+                });
+                console.log("Peça salva com sucesso");
+                alert(`Sucesso! DocumentoID criado: ${docRef.id}`);
+              } catch (error: any) {
+                console.log(error);
+                alert(`Erro: ${error.message}`);
+              }
+            }}
+            className="px-6 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 font-bold uppercase text-[10px] tracking-widest text-white transition-all duration-300 flex items-center gap-2 border border-indigo-400/20 shadow-lg shadow-indigo-500/10 active:scale-95"
+          >
+            <Database size={16} /> Teste Firebase
+          </button>
+          <button 
+            type="button"
+            onClick={async () => {
+              try {
+                const count = await popularServicosPadrao();
+                if (count > 0) {
+                  alert(`Sucesso! Foram cadastrados ${count} serviços automotivos automáticos no Firestore.`);
+                } else {
+                  alert('A coleção de serviços já possui dados. Nenhum serviço novo foi inserido para evitar duplicados.');
+                }
+              } catch (error: any) {
+                console.log(error);
+                alert(`Erro ao popular: ${error.message}`);
+              }
+            }}
+            className="px-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-bold uppercase text-[10px] tracking-widest text-white transition-all duration-300 flex items-center gap-2 border border-emerald-400/20 shadow-lg shadow-emerald-500/10 active:scale-95"
+          >
+            <Database size={16} /> Pop. Serviços Padrão
+          </button>
+          <button 
+            onClick={() => {
+              setEditingItem(null);
+              setFormType('part');
+              setErrorMsg(null);
+              setIsSubmitting(false);
+              setIsModalOpen(true);
+            }}
+            className="btn-primary"
+          >
+            <Plus size={20} /> Adicionar Item
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-col md:flex-row gap-6 mb-10">
@@ -111,7 +169,14 @@ const Catalog: React.FC = () => {
                 </span>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button 
-                    onClick={(e) => { e.stopPropagation(); setEditingItem(item); setFormType(item.type); setIsModalOpen(true); }} 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      setEditingItem(item); 
+                      setFormType(item.type); 
+                      setErrorMsg(null);
+                      setIsSubmitting(false);
+                      setIsModalOpen(true); 
+                    }} 
                     className="p-3 hover:bg-white/10 rounded-xl text-white/40 hover:text-white transition-colors"
                   >
                     <Edit2 size={16} />
@@ -202,7 +267,14 @@ const Catalog: React.FC = () => {
                 </div>
               </div>
 
-              <form id="catalog-form" onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              {errorMsg && (
+                <div className="mx-8 mt-4 p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl flex items-center gap-3 text-xs uppercase font-black tracking-wider">
+                  <AlertCircle size={18} className="shrink-0" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              <form key={editingItem?.id || 'new'} id="catalog-form" onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
                 <div>
                   <label className="block text-[10px] font-black text-white/40 uppercase tracking-widest mb-3">Nome Técnico do Item *</label>
                   <input required name="name" defaultValue={editingItem?.name} className="input-field" placeholder={formType === 'part' ? 'Ex: Disco de Freio Ventilado' : 'Ex: Revisão Preventiva 40k'} />
@@ -274,13 +346,23 @@ const Catalog: React.FC = () => {
               </form>
 
               <div className="p-8 border-t border-white/5 flex gap-4 bg-white/5">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 btn-secondary py-4">CANCELAR</button>
+                <button type="button" disabled={isSubmitting} onClick={() => setIsModalOpen(false)} className="flex-1 btn-secondary py-4 disabled:opacity-50">CANCELAR</button>
                 <button 
                   type="submit"
                   form="catalog-form"
-                  className="flex-1 btn-primary py-4"
+                  disabled={isSubmitting}
+                  className="flex-1 btn-primary py-4 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  <Save size={18} /> SALVAR ITEM
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      SALVANDO...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} /> SALVAR ITEM
+                    </>
+                  )}
                 </button>
               </div>
             </motion.div>

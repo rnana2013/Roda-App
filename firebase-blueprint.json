@@ -1,0 +1,111 @@
+{
+  "entities": {
+    "client": {
+      "title": "Client",
+      "description": "Representative schema for a shop client",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "email": { "type": "string" },
+        "cpf": { "type": "string" },
+        "address": { "type": "string" },
+        "observations": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name"]
+    },
+    "vehicle": {
+      "title": "Vehicle",
+      "description": "Vehicle asset associated with a client",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientId": { "type": "string" },
+        "brand": { "type": "string" },
+        "model": { "type": "string" },
+        "year": { "type": "string" },
+        "color": { "type": "string" },
+        "plate": { "type": "string" },
+        "km": { "type": "number" },
+        "fuelType": { "type": "string" },
+        "observations": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "brand", "model", "plate"]
+    },
+    "service_catalog": {
+      "title": "Service Catalog",
+      "description": "Available labor/procedures",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "descricao": { "type": "string" },
+        "valorPadrao": { "type": "number" },
+        "categoria": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "nome", "valorPadrao"]
+    },
+    "part_catalog": {
+      "title": "Part Catalog",
+      "description": "Available parts / stock hardware",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "codigo": { "type": "string" },
+        "marca": { "type": "string" },
+        "valorCusto": { "type": "number" },
+        "valorVenda": { "type": "number" },
+        "estoque": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "nome", "valorVenda"]
+    },
+    "service_order": {
+      "title": "Service Order / Work Order",
+      "description": "Service records representing budget or active work orders",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "subtotal": { "type": "number" },
+        "desconto": { "type": "number" },
+        "total": { "type": "number" },
+        "status": { "type": "string" },
+        "observacoes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "finalizadoEm": { "type": "string", "format": "date-time" },
+        "itens": { "type": "array" }
+      },
+      "required": ["id", "vehicleId", "status", "itens"]
+    }
+  },
+  "firestore": {
+    "clientes": {
+      "schema": "client",
+      "description": "Collection of registed clients"
+    },
+    "veiculos": {
+      "schema": "vehicle",
+      "description": "Collection of registed vehicles"
+    },
+    "servicos": {
+      "schema": "service_catalog",
+      "description": "Collection of manual procedures / labor catalog"
+    },
+    "pecas": {
+      "schema": "part_catalog",
+      "description": "Collection of mechanical hardware / parts-inventory"
+    },
+    "ordens_servico": {
+      "schema": "service_order",
+      "description": "Collection of work orders and budgets"
+    }
+  }
+}

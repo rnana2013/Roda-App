@@ -8,7 +8,7 @@ import { useStore } from '../store';
 import { motion } from 'motion/react';
 
 const Settings: React.FC = () => {
-  const { settings, updateSettings, clearStorage } = useStore();
+  const { settings, updateSettings, clearStorage, clients, vehicles, services, catalog } = useStore();
 
   const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,16 +26,16 @@ const Settings: React.FC = () => {
 
   const handleExport = () => {
     const data = {
-      clients: JSON.parse(localStorage.getItem('roda-clients') || '[]'),
-      vehicles: JSON.parse(localStorage.getItem('roda-vehicles') || '[]'),
-      services: JSON.parse(localStorage.getItem('roda-services') || '[]'),
-      catalog: JSON.parse(localStorage.getItem('roda-catalog') || '[]'),
+      clients,
+      vehicles,
+      services,
+      catalog,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `backup-roda-app-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `backup-pit-stop-app-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
   };
 
@@ -43,7 +43,7 @@ const Settings: React.FC = () => {
     <div className="p-4 md:p-12 max-w-5xl mx-auto min-h-screen">
        <header className="mb-12">
          <h1 className="text-5xl font-display font-black tracking-tighter uppercase italic text-white leading-none tracking-tight">Painel de <span className="text-primary italic">Ajustes</span></h1>
-         <p className="text-white/30 font-black uppercase tracking-[0.4em] text-[10px] mt-4">Configuração global do ecossistema Roda App</p>
+         <p className="text-white/30 font-black uppercase tracking-[0.4em] text-[10px] mt-4">Configuração global do ecossistema Pit Stop App</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">

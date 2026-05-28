@@ -45,7 +45,7 @@ const Dashboard: React.FC = () => {
     <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
       <header className="mb-10 pt-4">
         <h1 className="text-4xl font-display font-black mb-1 tracking-tighter uppercase italic text-white">Resumo da <span className="text-primary italic">Operação</span></h1>
-        <p className="text-white/40 font-bold uppercase tracking-widest text-[10px]">Dashboard administrativo da Roda App</p>
+        <p className="text-white/40 font-bold uppercase tracking-widest text-[10px]">Dashboard administrativo da Pit Stop App</p>
       </header>
 
       {/* Quick Actions / Atalhos */}

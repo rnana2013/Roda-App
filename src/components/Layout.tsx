@@ -10,27 +10,26 @@ import {
   Settings, LayoutDashboard, Database, BarChart3, Search, Calendar as CalendarIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useStore } from '../store';
+import { PitStopLogo } from './PitStopLogo';
 
 const Layout: React.FC = () => {
+
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-background">
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#070708]">
       {/* Mobile Header */}
       <header className="md:hidden flex items-center justify-between p-4 bg-black border-b border-white/5 sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center rotate-3 shadow-lg shadow-primary/20">
-            <Car className="text-black w-6 h-6 shrink-0" />
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2 py-1">
+            <PitStopLogo width={150} height={32} className="justify-start" />
           </div>
-          <span className="font-display font-black text-xl tracking-tighter text-white uppercase italic">Roda <span className="text-primary">App</span></span>
         </div>
       </header>
 
       {/* Sidebar Navigation (Desktop) */}
-      <aside className="hidden md:flex flex-col w-64 bg-black border-r border-white/5 h-screen sticky top-0 text-white">
-        <div className="p-8 mb-6 flex items-center gap-3">
-          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center rotate-6 shadow-xl shadow-primary/30 group">
-            <Car className="text-black w-8 h-8 shrink-0 group-hover:scale-110 transition-transform" />
-          </div>
-          <span className="font-display font-black text-2xl tracking-tighter uppercase italic leading-none">Roda <span className="text-primary">App</span></span>
+      <aside className="hidden md:flex flex-col w-64 bg-black border-r border-white/5 h-screen sticky top-0 text-white select-none">
+        <div className="px-6 py-8 mb-4 flex items-center justify-center">
+          <PitStopLogo width={190} height={42} />
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto custom-scrollbar">
@@ -38,9 +37,10 @@ const Layout: React.FC = () => {
           <NavItem to="/clientes" icon={<Users size={20} />} label="Clientes" />
           <NavItem to="/veiculos" icon={<Car size={20} />} label="Veículos" />
           <NavItem to="/calendario" icon={<CalendarIcon size={20} />} label="Calendário" />
-          <NavItem to="/servicos" icon={<Wrench size={20} />} label="Serviços" />
+          <NavItem to="/servicos" icon={<Wrench size={20} />} label="Ordens de Serviço" />
+          <NavItem to="/catalogo-servicos" icon={<Wrench size={20} />} label="Catálogo de Serviços" />
+          <NavItem to="/catalogo-pecas" icon={<Database size={20} />} label="Catálogo de Peças" />
           <NavItem to="/orcamentos" icon={<FileText size={20} />} label="Orçamentos" />
-          <NavItem to="/catalogo" icon={<Database size={20} />} label="Catálogo" />
           <NavItem to="/financeiro" icon={<BarChart3 size={20} />} label="Financeiro" />
           <NavItem to="/configuracoes" icon={<Settings size={20} />} label="Ajustes" />
         </nav>

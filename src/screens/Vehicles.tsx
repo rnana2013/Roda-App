@@ -226,7 +226,7 @@ const Vehicles: React.FC = () => {
                 </button>
               </div>
               
-              <form id="vehicleForm" onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              <form key={editingVehicle?.id || 'new'} id="vehicleForm" onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center mb-1">
                     <label className="block text-[10px] font-black text-white/40 uppercase tracking-widest">Vincular Proprietário</label>

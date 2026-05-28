@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    match /clientes/{clientId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /veiculos/{vehicleId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /servicos/{serviceId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /pecas/{partId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /ordens_servico/{orderId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /settings/{settingId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /oil_changes/{oilChangeId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}

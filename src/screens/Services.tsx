@@ -29,6 +29,15 @@ const Services: React.FC = () => {
   const [catalogSearch, setCatalogSearch] = useState('');
   const [showCatalogResults, setShowCatalogResults] = useState(false);
 
+  // States for select-and-configure modal flow (Requirements 8 & 9)
+  const [catalogModalOpen, setCatalogModalOpen] = useState(false);
+  const [catalogModType, setCatalogModType] = useState<'service' | 'part' | null>(null);
+  const [selectedCatalogItem, setSelectedCatalogItem] = useState<CatalogItem | null>(null);
+  const [preAddPrice, setPreAddPrice] = useState(0);
+  const [preAddQty, setPreAddQty] = useState(1);
+  const [preAddDiscount, setPreAddDiscount] = useState(0);
+  const [preAddSearch, setPreAddSearch] = useState('');
+
   const filteredServices = services.filter(s => {
     const vehicle = vehicles.find(v => v.id === s.vehicleId);
     const client = clients.find(c => c.id === s.clientId);
@@ -50,7 +59,7 @@ const Services: React.FC = () => {
     let message = '';
     const clientName = client?.name || 'Cliente';
     if (type === 'budget') {
-      message = `Olá, ${clientName}. Aqui é da Oficina Roda App. O orçamento do seu veículo ${vehicle.model} placa ${vehicle.plate} ficou no valor de R$ ${service.totalValue.toFixed(2)}. Podemos seguir com o serviço?`;
+      message = `Olá, ${clientName}. Aqui é da Oficina Pit Stop App. O orçamento do seu veículo ${vehicle.model} placa ${vehicle.plate} ficou no valor de R$ ${service.totalValue.toFixed(2)}. Podemos seguir com o serviço?`;
     } else {
       message = `Olá, ${clientName}. Seu veículo ${vehicle.model} placa ${vehicle.plate} já está pronto para retirada. Valor total: R$ ${service.totalValue.toFixed(2)}.`;
     }
@@ -335,7 +344,7 @@ const Services: React.FC = () => {
               </div>
 
               <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
-                <form id="service-form" className="grid grid-cols-1 lg:grid-cols-5 gap-12">
+                <form key={editingService?.id || 'new'} id="service-form" className="grid grid-cols-1 lg:grid-cols-5 gap-12">
                   <div className="lg:col-span-2 space-y-10">
                     <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/10 space-y-8">
                       <h3 className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] border-b border-white/10 pb-4 flex items-center gap-3">
@@ -413,22 +422,46 @@ const Services: React.FC = () => {
 
                   <div className="lg:col-span-3 space-y-10">
                     <div className="space-y-6">
-                       <div className="flex items-center justify-between">
+                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                          <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Itens Técnicos <span className="text-primary italic">& Mão de Obra</span></h3>
-                         <div className="flex gap-3">
+                         <div className="flex flex-wrap gap-2">
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                setCatalogModType('part');
+                                setSelectedCatalogItem(null);
+                                setPreAddSearch('');
+                                setCatalogModalOpen(true);
+                              }}
+                              className="text-[9px] font-black bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 px-4 py-2 rounded-xl uppercase tracking-widest transition-all"
+                            >
+                              [ Adicionar Peça ]
+                            </button>
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                setCatalogModType('service');
+                                setSelectedCatalogItem(null);
+                                setPreAddSearch('');
+                                setCatalogModalOpen(true);
+                              }}
+                              className="text-[9px] font-black bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 px-4 py-2 rounded-xl uppercase tracking-widest transition-all"
+                            >
+                              [ Adicionar Serviço ]
+                            </button>
                             <button 
                               type="button" 
                               onClick={() => addLooseItem('part')}
-                              className="text-[9px] font-black bg-white/5 text-white/60 px-4 py-2 rounded-xl uppercase tracking-widest border border-white/5 hover:bg-white/10 transition-colors"
+                              className="text-[9px] font-black bg-white/5 text-white/50 px-4 py-2 rounded-xl uppercase tracking-widest border border-white/5 hover:bg-white/10 transition-colors"
                             >
-                              + Peça Avulsa
+                              + Avulsa
                             </button>
                             <button 
                               type="button" 
                               onClick={() => addLooseItem('service')}
-                              className="text-[9px] font-black bg-white/5 text-white/60 px-4 py-2 rounded-xl uppercase tracking-widest border border-white/5 hover:bg-white/10 transition-colors"
+                              className="text-[9px] font-black bg-white/5 text-white/50 px-4 py-2 rounded-xl uppercase tracking-widest border border-white/5 hover:bg-white/10 transition-colors"
                             >
-                              + Serviço Avulso
+                              + Avulso
                             </button>
                          </div>
                        </div>
@@ -521,9 +554,21 @@ const Services: React.FC = () => {
                                    <button type="button" onClick={() => updateItemQuantity(item.id, item.quantity + 1)} className="w-10 h-10 flex items-center justify-center font-black text-white/20 hover:text-primary transition-colors text-xl">+</button>
                                  </div>
                                  
-                                 <div className="text-right min-w-[120px]">
-                                   <p className="text-xl font-black text-white italic leading-none">R$ {(item.price * item.quantity).toFixed(2)}</p>
-                                   <p className="text-[9px] text-white/20 font-black uppercase mt-1 tracking-widest">Un: R$ {item.price.toFixed(2)}</p>
+                                 <div className="text-right min-w-[140px]">
+                                   <p className="text-xl font-black text-white italic leading-none mb-1">R$ {(item.price * item.quantity).toFixed(2)}</p>
+                                   <div className="flex items-center gap-1.5 justify-end text-[9px] text-white/30 font-black uppercase tracking-widest">
+                                     <span>Un: R$</span>
+                                     <input 
+                                       type="number"
+                                       value={item.price}
+                                       step="0.01"
+                                       onChange={(e) => {
+                                         const newPrice = parseFloat(e.target.value) || 0;
+                                         setItems(items.map(i => i.id === item.id ? { ...i, price: newPrice } : i));
+                                       }}
+                                       className="bg-black/50 border border-white/10 rounded-lg py-0.5 px-2 w-20 text-center text-primary font-black italic text-xs leading-none"
+                                     />
+                                   </div>
                                  </div>
                                  
                                  <button type="button" onClick={() => removeItem(item.id)} className="p-3 text-white/10 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all">
@@ -589,6 +634,177 @@ const Services: React.FC = () => {
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Select-and-Configure Modal Flow (Requirements 8 & 9) */}
+      <AnimatePresence>
+        {catalogModalOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 30 }}
+              className="card-dark w-full max-w-xl bg-[#0c0c0e] border border-white/10 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden text-white"
+            >
+              <button 
+                onClick={() => setCatalogModalOpen(false)} 
+                className="absolute right-6 top-6 p-2 hover:bg-white/10 rounded-full text-white/55 transition-colors"
+                type="button"
+              >
+                <X size={20} />
+              </button>
+
+              <h2 className="text-2xl font-black italic uppercase tracking-tight text-white mb-6">
+                Adicionar {catalogModType === 'service' ? 'Serviço' : 'Peça'} <span className="text-primary italic">do Catálogo</span>
+              </h2>
+
+              {!selectedCatalogItem ? (
+                <div className="space-y-6">
+                  <div className="relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
+                    <input 
+                      type="text" 
+                      placeholder={`Buscar ${catalogModType === 'service' ? 'serviço' : 'peça'} pelo nome...`}
+                      value={preAddSearch}
+                      onChange={(e) => setPreAddSearch(e.target.value)}
+                      className="input-field w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl"
+                    />
+                  </div>
+
+                  <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar space-y-2">
+                    {catalog
+                      .filter(item => item.type === catalogModType && item.name.toLowerCase().includes(preAddSearch.toLowerCase()))
+                      .map(item => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCatalogItem(item);
+                            setPreAddPrice(item.suggestedPrice);
+                            setPreAddQty(1);
+                            setPreAddDiscount(0);
+                          }}
+                          className="w-full text-left p-4 hover:bg-white/5 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between group/list-item transition-all"
+                        >
+                          <div>
+                            <p className="text-sm font-black uppercase text-white group-hover/list-item:text-primary transition-colors">{item.name}</p>
+                            <p className="text-[10px] text-white/30 font-black uppercase tracking-wider mt-1">{item.category}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-black italic text-primary">R$ {item.suggestedPrice.toFixed(2)}</span>
+                          </div>
+                        </button>
+                      ))}
+
+                    {catalog.filter(item => item.type === catalogModType).length === 0 && (
+                      <div className="py-12 text-center text-xs text-white/40">
+                        Nenhum item cadastrado neste grupo. Acesse o Catálogo acima para cadastrar.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Selected Item details & customization form */}
+                  <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
+                    <span className="text-[8px] px-2 py-0.5 rounded bg-primary text-black font-black uppercase tracking-widest">{selectedCatalogItem.category}</span>
+                    <h3 className="text-xl font-black uppercase italic tracking-tight text-white mt-2">{selectedCatalogItem.name}</h3>
+                    {selectedCatalogItem.description && (
+                      <p className="text-xs text-white/40 mt-1">{selectedCatalogItem.description}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black text-white/40 uppercase tracking-widest mb-2">Valor Base (Padrão)</label>
+                        <div className="py-3 px-4 bg-white/5 border border-white/10 rounded-xl text-white font-bold text-center text-xs">
+                          R$ {selectedCatalogItem.suggestedPrice.toFixed(2)}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black text-white/40 uppercase tracking-widest mb-2">Valor Ajustado *</label>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          value={preAddPrice} 
+                          onChange={(e) => setPreAddPrice(Number(e.target.value))}
+                          className="input-field w-full px-4 py-3 bg-black/50 border border-white/10 rounded-xl text-center text-primary font-black italic"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black text-white/40 uppercase tracking-widest mb-2">Quantidade *</label>
+                        <input 
+                          type="number" 
+                          value={preAddQty} 
+                          min="1" 
+                          onChange={(e) => setPreAddQty(Math.max(1, Number(e.target.value)))}
+                          className="input-field w-full px-4 py-3 bg-black/50 border border-white/10 rounded-xl text-center font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-white/40 uppercase tracking-widest mb-2">Desconto Direto (R$)</label>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        value={preAddDiscount} 
+                        onChange={(e) => setPreAddDiscount(Number(e.target.value))}
+                        className="input-field w-full px-4 py-3 bg-black/50 border border-white/10 rounded-xl text-center font-bold text-red-400"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Calculations breakdown block */}
+                  <div className="p-5 bg-primary/10 border border-primary/20 rounded-2xl flex justify-between items-center text-black">
+                    <div>
+                      <span className="text-[9px] font-black uppercase text-white/40 tracking-widest block mb-1">Cálculo de Cobertura</span>
+                      <span className="text-xs font-bold text-white/60 block">({preAddQty}x de R$ {Number(preAddPrice).toFixed(2)}) - R$ {Number(preAddDiscount).toFixed(2)}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[8px] font-black uppercase text-primary tracking-widest block">Subtotal</span>
+                      <span className="text-2xl font-black italic text-primary leading-none">
+                        R$ {Math.max(0, (Number(preAddPrice) * Number(preAddQty)) - Number(preAddDiscount)).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 pt-4 border-t border-white/5">
+                    <button 
+                      type="button" 
+                      onClick={() => setSelectedCatalogItem(null)} 
+                      className="flex-1 py-4 bg-white/5 hover:bg-white/10 border border-white/5 text-white font-bold uppercase text-[10px] tracking-wider rounded-xl transition-all"
+                    >
+                      Voltar à pesquisa
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const finalPrice = Math.max(0, ((Number(preAddPrice) * Number(preAddQty)) - Number(preAddDiscount)) / Number(preAddQty));
+                        const newItem: ServiceItem = {
+                          id: crypto.randomUUID(),
+                          name: selectedCatalogItem.name,
+                          price: finalPrice,
+                          quantity: Number(preAddQty),
+                          type: catalogModType === 'service' ? 'service' : 'part'
+                        };
+                        setItems([...items, newItem]);
+                        setCatalogModalOpen(false);
+                      }}
+                      className="flex-1 py-4 bg-primary text-black font-extrabold uppercase text-[10px] tracking-wider rounded-xl transition-all shadow-lg shadow-primary/20"
+                    >
+                      Confirmar e Adicionar
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

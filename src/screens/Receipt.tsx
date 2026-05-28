@@ -26,6 +26,28 @@ const Receipt: React.FC = () => {
     window.print();
   };
 
+  const sendWhatsApp = () => {
+    if (!service) return;
+    const clientName = client?.name || 'Cliente';
+    const vehicleModel = vehicle?.model || 'veículo';
+    const vehiclePlate = vehicle?.plate || '';
+    const total = service.totalValue.toFixed(2);
+    const serviceId = service.id.slice(0, 8).toUpperCase();
+    
+    const message = `Olá, ${clientName}! Segue o comprovante/Ordem de Serviço #${serviceId} Pit Stop App:\n\n` +
+                  `🚗 Veículo: ${vehicleModel} (${vehiclePlate})\n` +
+                  `🔧 Detalhes: ${service.description || 'Serviços do veículo'}\n` +
+                  `💵 Valor Total: R$ ${total}\n\n` +
+                  `Sua ordem de serviço foi salva no sistema e está finalizada! Obrigado pela preferência!`;
+                  
+    const phone = client ? (client.whatsapp || client.phone || '').replace(/\D/g, '') : '';
+    if (phone) {
+      window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(message)}`, '_blank');
+    } else {
+      alert('Este cliente não possui WhatsApp ou telefone cadastrado.');
+    }
+  };
+
   const totals = service.items.reduce((acc, item) => {
     if (item.type === 'part') acc.parts += item.price * item.quantity;
     else acc.services += item.price * item.quantity;
@@ -45,7 +67,7 @@ const Receipt: React.FC = () => {
             <Printer size={20} />
             <span className="text-xs">IMPRIMIR RECIBO</span>
           </button>
-          <button className="btn-secondary px-8 flex items-center gap-3 bg-green-500/10 border-green-500/20 text-green-500 hover:bg-green-500 hover:text-white">
+          <button onClick={sendWhatsApp} className="btn-secondary px-8 flex items-center gap-3 bg-green-500/10 border-green-500/20 text-green-500 hover:bg-green-500 hover:text-white">
             <MessageCircle size={20} />
             <span className="text-xs">ENVIAR WHATSAPP</span>
           </button>
