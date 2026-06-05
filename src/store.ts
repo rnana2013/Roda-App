@@ -178,7 +178,19 @@ export const useStore = create<AppState>((set, get) => {
           clientId: data.clientId || data.clienteId || undefined,
           date: data.date || data.createdAt || new Date().toISOString(),
           status: data.status || 'Aguardando avaliação',
-          items: data.items || data.itens || [],
+          items: (data.items || data.itens || []).map((item: any) => {
+            const rawType = String(item.type || item.tipo || '').toLowerCase().trim();
+            const normalizedType = (rawType === 'service' || rawType === 'servico' || rawType === 'labor' || rawType === 'serviço' || rawType === 'mão de obra' || rawType === 'mao de obra') 
+              ? 'service' 
+              : 'part';
+            return {
+              id: item.id || crypto.randomUUID(),
+              name: item.name || item.nome || '',
+              price: Number(item.price !== undefined ? item.price : (item.val || item.valor || item.suggestedPrice || 0)),
+              quantity: Number(item.quantity !== undefined ? item.quantity : (item.qtd || item.quantidade || 1)),
+              type: normalizedType as 'service' | 'part'
+            };
+          }),
           laborValue: Number(data.laborValue !== undefined ? data.laborValue : (data.subtotal || 0)),
           partsValue: Number(data.partsValue || 0),
           discount: Number(data.discount !== undefined ? data.discount : (data.desconto || 0)),

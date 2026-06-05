@@ -38,6 +38,13 @@ const Services: React.FC = () => {
   const [preAddDiscount, setPreAddDiscount] = useState(0);
   const [preAddSearch, setPreAddSearch] = useState('');
 
+  // States for adding loose items
+  const [looseModalOpen, setLooseModalOpen] = useState(false);
+  const [looseType, setLooseType] = useState<'part' | 'service'>('part');
+  const [looseName, setLooseName] = useState('');
+  const [loosePrice, setLoosePrice] = useState('');
+  const [looseQty, setLooseQty] = useState('1');
+
   const filteredServices = services.filter(s => {
     const vehicle = vehicles.find(v => v.id === s.vehicleId);
     const client = clients.find(c => c.id === s.clientId);
@@ -73,9 +80,22 @@ const Services: React.FC = () => {
   };
 
   const calculateTotals = (currentItems: ServiceItem[], currentDiscount: number) => {
-    const partsValue = currentItems.filter(i => i.type === 'part').reduce((acc, i) => acc + (i.price * i.quantity), 0);
-    const laborValue = currentItems.filter(i => i.type === 'service').reduce((acc, i) => acc + (i.price * i.quantity), 0);
-    const total = (partsValue + laborValue) - currentDiscount;
+    const partsValue = (currentItems || [])
+      .filter(i => {
+        const t = String(i.type || '').toLowerCase().trim();
+        return t === 'part' || t === 'peca' || t === 'hardware';
+      })
+      .reduce((acc, i) => acc + (Number(i.price || 0) * Number(i.quantity || 0)), 0);
+
+    const laborValue = (currentItems || [])
+      .filter(i => {
+        const t = String(i.type || '').toLowerCase().trim();
+        return t === 'service' || t === 'labor' || t === 'servico' || t === 'serviço' || t === 'mão de obra' || t === 'mao de obra';
+      })
+      .reduce((acc, i) => acc + (Number(i.price || 0) * Number(i.quantity || 0)), 0);
+
+    const discountVal = isNaN(Number(currentDiscount)) ? 0 : Number(currentDiscount);
+    const total = (partsValue + laborValue) - discountVal;
     return { partsValue, laborValue, total };
   };
 
@@ -94,22 +114,30 @@ const Services: React.FC = () => {
   };
 
   const addLooseItem = (type: 'part' | 'service') => {
-    const name = prompt(`Nome da ${type === 'part' ? 'Peça' : 'Mão de Obra'} avulsa:`);
-    if (!name) return;
-    
-    const priceStr = prompt(`Valor unitário da(o) ${name}:`, '0.00');
-    if (priceStr === null) return;
-    const price = parseFloat(priceStr.replace(',', '.')) || 0;
+    setLooseType(type);
+    setLooseName('');
+    setLoosePrice('');
+    setLooseQty('1');
+    setLooseModalOpen(true);
+  };
+
+  const handleAddLooseItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!looseName.trim()) return;
+
+    const priceNum = parseFloat(String(loosePrice).replace(',', '.')) || 0;
+    const qtyNum = parseInt(looseQty) || 1;
 
     const newItem: ServiceItem = {
       id: crypto.randomUUID(),
-      name,
-      price,
-      quantity: 1,
-      type
+      name: looseName.trim(),
+      price: priceNum,
+      quantity: qtyNum,
+      type: looseType
     };
 
     setItems([...items, newItem]);
+    setLooseModalOpen(false);
   };
 
   const removeItem = (id: string) => {
@@ -122,7 +150,8 @@ const Services: React.FC = () => {
 
   const handleFinalize = (e: React.FormEvent, shouldPrint: boolean) => {
     e.preventDefault();
-    const form = e.currentTarget as HTMLFormElement;
+    const form = document.getElementById('service-form') as HTMLFormElement;
+    if (!form) return;
     const formData = new FormData(form);
     const vehicleId = formData.get('vehicleId') as string;
     const vehicle = vehicles.find(v => v.id === vehicleId);
@@ -587,10 +616,10 @@ const Services: React.FC = () => {
                          
                          <div className="grid grid-cols-2 gap-y-4 relative z-10">
                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-black/50">Total em Hardware (Peças):</span>
-                           <span className="text-right font-black italic text-lg leading-none">R$ {items.filter(i => i.type === 'part').reduce((acc, i) => acc + (i.price * i.quantity), 0).toFixed(2)}</span>
+                           <span className="text-right font-black italic text-lg leading-none">R$ {calculateTotals(items, discount).partsValue.toFixed(2)}</span>
                            
                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-black/50">Total em Serviços (Mão de Obra):</span>
-                           <span className="text-right font-black italic text-lg leading-none">R$ {items.filter(i => i.type === 'service' || i.type === 'labor').reduce((acc, i) => acc + (i.price * i.quantity), 0).toFixed(2)}</span>
+                           <span className="text-right font-black italic text-lg leading-none">R$ {calculateTotals(items, discount).laborValue.toFixed(2)}</span>
                            
                            <div className="col-span-2 pt-6 mt-4 border-t border-black/10 flex items-center justify-between">
                              <div className="flex items-center gap-4">
@@ -805,6 +834,90 @@ const Services: React.FC = () => {
                   </div>
                 </div>
               )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modern, safe Modal for Loose Items (Requirement 8 & 9) */}
+      <AnimatePresence>
+        {looseModalOpen && (
+          <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md text-white">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 30 }}
+              className="card-dark w-full max-w-md bg-[#0c0c0e] border border-white/10 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden"
+            >
+              <button 
+                onClick={() => setLooseModalOpen(false)} 
+                className="absolute right-6 top-6 p-2 hover:bg-white/10 rounded-full text-white/55 transition-colors"
+                type="button"
+              >
+                <X size={20} />
+              </button>
+
+              <h2 className="text-2xl font-black italic uppercase tracking-tight text-white mb-6">
+                Adicionar {looseType === 'part' ? 'Peça' : 'Serviço'} <span className="text-primary italic">Avulso</span>
+              </h2>
+
+              <form onSubmit={handleAddLooseItem} className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black text-white/40 uppercase tracking-widest mb-2">
+                    Nome da {looseType === 'part' ? 'Peça' : 'Mão de Obra'} *
+                  </label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder={looseType === 'part' ? 'Ex: Correia Dentada Continental' : 'Ex: Alinhamento e Balanceamento'}
+                    value={looseName}
+                    onChange={(e) => setLooseName(e.target.value)}
+                    className="input-field w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/20 transition-all font-bold"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-white/40 uppercase tracking-widest mb-2">Valor Unitário (R$)</label>
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="0.00"
+                      value={loosePrice}
+                      onChange={(e) => setLoosePrice(e.target.value)}
+                      className="input-field w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/20 transition-all text-center text-primary font-black italic"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-white/40 uppercase tracking-widest mb-2">Quantidade</label>
+                    <input 
+                      type="number" 
+                      required
+                      min="1"
+                      value={looseQty}
+                      onChange={(e) => setLooseQty(e.target.value)}
+                      className="input-field w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/20 transition-all text-center font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-4 pt-4 border-t border-white/5">
+                  <button 
+                    type="button" 
+                    onClick={() => setLooseModalOpen(false)} 
+                    className="flex-1 py-4 bg-white/5 hover:bg-white/10 border border-white/5 text-white font-bold uppercase text-[10px] tracking-wider rounded-xl transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 py-4 bg-primary text-black font-extrabold uppercase text-[10px] tracking-wider rounded-xl transition-all shadow-lg shadow-primary/20"
+                  >
+                    Adicionar Item
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
